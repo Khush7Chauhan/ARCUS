@@ -9,7 +9,7 @@ app.use(express.json());
 
 app.post("/deploy", async (req,res)=>{
     const repoUrl = req.body.repoUrl;
-    const id = generate(); //asd12
+    const id = generate(); 
     const git = simpleGit();
     await git.clone(repoUrl,`output/${id}`);
     console.log(repoUrl);
