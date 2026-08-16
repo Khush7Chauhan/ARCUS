@@ -1,11 +1,14 @@
-import { S3 } from "aws-sdk";
+import AWS from "aws-sdk";
 import * as fs from "fs";
 import path from "path";
+import dotenv from "dotenv"; 
 
-const s3 = new S3({
-  accessKeyId: "",
-  secretAccessKey: "",
-  endpoint: "",
+dotenv.config({ path: "../.env" });
+
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  region: "ap-south-1"
 });
 
 export async function downloadS3Folder(prefix: string) {

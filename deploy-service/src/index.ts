@@ -1,6 +1,6 @@
-import { createClient, commandOptions } from "redis";
-import { copyFinalDist, downloadS3Folder } from "./aws";
-import { buildProject } from "./utils";
+import { createClient } from "redis";
+import { copyFinalDist, downloadS3Folder } from "./aws.js";
+import { buildProject } from "./utils.js";
 const subscriber = createClient();
 subscriber.connect();
 
@@ -9,11 +9,7 @@ publisher.connect();
 
 async function main() {
     while(1) {
-        const res = await subscriber.brPop(
-            commandOptions({ isolated: true }),
-            'build-queue',
-            0
-          );
+        const response = await subscriber.brPop("build-queue", 0);
         // @ts-ignore;
         const id = res.element
         
