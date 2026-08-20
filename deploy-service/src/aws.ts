@@ -2,19 +2,25 @@ import AWS from "aws-sdk";
 import * as fs from "fs";
 import path from "path";
 import dotenv from "dotenv"; 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: "../.env" });
 
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-  region: "ap-south-1"
+  region: "ap-south-1" 
 });
+
+const BUCKET_NAME = "arcus-project"; 
 
 export async function downloadS3Folder(prefix: string) {
   const allFiles = await s3
     .listObjectsV2({
-      Bucket: "arcus",
+      Bucket: BUCKET_NAME,
       Prefix: prefix,
     })
     .promise();
@@ -34,7 +40,7 @@ export async function downloadS3Folder(prefix: string) {
       await new Promise<void>((resolve, reject) => {
         s3
           .getObject({
-            Bucket: "vercel",
+            Bucket: BUCKET_NAME,
             Key,
           })
           .createReadStream()
@@ -78,10 +84,10 @@ const uploadFile = async (fileName: string, localFilePath: string) => {
   const response = await s3
     .upload({
       Body: fileContent,
-      Bucket: "vercel",
+      Bucket:BUCKET_NAME ,
       Key: fileName,
     })
     .promise();
 
-  console.log(response);
+  console.log("Uploaded successfully:", response.Key);
 };

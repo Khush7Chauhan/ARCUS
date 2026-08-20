@@ -9,14 +9,16 @@ publisher.connect();
 
 async function main() {
     while(1) {
-        const response = await subscriber.brPop("build-queue", 0);
-        // @ts-ignore;
-        const id = res.element
+        const res = await subscriber.brPop("build-queue", 0);
+        if (!res) continue;
+
+        const id = res.element;
+        console.log(`Starting build for ID: ${id}`);
         
-        await downloadS3Folder(`output/${id}`)
+        await downloadS3Folder(`output/${id}`);
         await buildProject(id);
         copyFinalDist(id);
-        publisher.hSet("status", id, "deployed")
+        await publisher.hSet("status", id, "deployed");
     }
 }
 main();
