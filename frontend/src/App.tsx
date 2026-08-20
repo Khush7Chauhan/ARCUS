@@ -1,4 +1,4 @@
-import './App.css'
+
 import { Landing } from './component/landing'
 
 function App() {
