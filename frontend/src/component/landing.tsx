@@ -5,6 +5,7 @@ import { Button } from "./ui/button"
 
 import { useState } from "react"
 import axios from "axios"
+import { auth } from "../firebase" // Ensure this path points to your firebase.ts
 
 const BACKEND_UPLOAD_URL = "http://localhost:3000";
 
@@ -33,44 +34,70 @@ export function Landing() {
               />
             </div>
             <Button onClick={async () => {
+              if (!repoUrl) {
+                alert("Please enter a GitHub URL!");
+                return;
+              }
               setUploading(true);
-              const res = await axios.post(`${BACKEND_UPLOAD_URL}/deploy`, {
-                repoUrl: repoUrl
-              });
-              setUploadId(res.data.id);
-              setUploading(false);
-              const interval = setInterval(async () => {
-                const response = await axios.get(`${BACKEND_UPLOAD_URL}/status?id=${res.data.id}`);
 
-                if (response.data.status === "deployed") {
-                  clearInterval(interval);
-                  setDeployed(true);
-                }
-              }, 3000)
+              try {
+                // 1. Retrieve the authenticated user's token
+                const token = await auth.currentUser?.getIdToken();
+
+                // 2. Attach the token to the Authorization header
+                const res = await axios.post(`${BACKEND_UPLOAD_URL}/deploy`, {
+                  repoUrl: repoUrl
+                }, {
+                  headers: {
+                    Authorization: `Bearer ${token}`
+                  }
+                });
+
+                setUploadId(res.data.id);
+                setUploading(false);
+
+                // 3. Poll the backend every 3 seconds for deployment status
+                const interval = setInterval(async () => {
+                  const response = await axios.get(`${BACKEND_UPLOAD_URL}/status?id=${res.data.id}`);
+
+                  if (response.data.status === "deployed") {
+                    clearInterval(interval);
+                    setDeployed(true);
+                  }
+                }, 3000);
+              } catch (error) {
+                console.error("Deployment failed:", error);
+                setUploading(false);
+                alert("An error occurred while connecting to the deployment server.");
+              }
+
             }} disabled={uploadId !== "" || uploading} className="w-full" type="submit">
-              {uploadId ? `Deploying (${uploadId})` : uploading ? "Uploading..." : "Upload"}
+              {uploadId ? `Deploying (${uploadId})` : uploading ? "Uploading..." : "Deploy"}
             </Button>
           </div>
         </CardContent>
       </Card>
-      {deployed && <Card className="w-full max-w-md mt-8">
-        <CardHeader>
-          <CardTitle className="text-xl">Deployment Status</CardTitle>
-          <CardDescription>Your website is successfully deployed!</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="deployed-url">Deployed URL</Label>
-            <Input id="deployed-url" readOnly type="url" value={`http://${uploadId}.dev.100xdevs.com:3001/index.html`} />
-          </div>
-          <br />
-          <Button className="w-full" variant="outline">
-            <a href={`http://${uploadId}.10kdevs.com/index.html`} target="_blank">
-              Visit Website
-            </a>
-          </Button>
-        </CardContent>
-      </Card>}
+      
+      {deployed && (
+        <Card className="w-full max-w-md mt-8">
+          <CardHeader>
+            <CardTitle className="text-xl">Deployment Status</CardTitle>
+            <CardDescription>Your website is successfully deployed!</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="deployed-url">Deployed URL</Label>
+              <Input id="deployed-url" readOnly type="url" value={`http://${uploadId}.dev.100xdevs.com:3001/index.html`} />
+            </div>
+            <br />
+            <Button className="w-full" variant="outline" asChild>
+              <a href={`http://${uploadId}.10kdevs.com/index.html`} target="_blank" rel="noopener noreferrer">
+                Visit Website
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </main>
   )
 }
