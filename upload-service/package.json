@@ -18,9 +18,11 @@
     "express": "^5.2.1",
     "redis": "^6.2.0",
     "simple-git": "^3.36.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19"
+    "@types/cors": "^2.8.19",
+    "@types/ws": "^8.18.1"
   }
 }
