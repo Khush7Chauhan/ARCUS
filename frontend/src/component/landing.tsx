@@ -3,9 +3,9 @@ import { Label } from "./ui/label"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import axios from "axios"
-import { auth } from "../firebase" // Ensure this path points to your firebase.ts
+import { auth } from "../firebase" 
 
 const BACKEND_UPLOAD_URL = "http://localhost:3000";
 
@@ -14,6 +14,15 @@ export function Landing() {
   const [uploadId, setUploadId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [deployed, setDeployed] = useState(false);
+  
+  const [logs, setLogs] = useState<string[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+  const [customDomain, setCustomDomain] = useState("");
+  const [mappingStatus, setMappingStatus] = useState("");
+
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
@@ -39,12 +48,10 @@ export function Landing() {
                 return;
               }
               setUploading(true);
+              setLogs([]); 
 
               try {
-                // 1. Retrieve the authenticated user's token
                 const token = await auth.currentUser?.getIdToken();
-
-                // 2. Attach the token to the Authorization header
                 const res = await axios.post(`${BACKEND_UPLOAD_URL}/deploy`, {
                   repoUrl: repoUrl
                 }, {
@@ -53,16 +60,21 @@ export function Landing() {
                   }
                 });
 
-                setUploadId(res.data.id);
-                setUploading(false);
+                const newUploadId = res.data.id;
+                setUploadId(newUploadId);
+                const ws = new WebSocket(`ws://localhost:3000?id=${newUploadId}`);
+                ws.onmessage = (event) => {
+                  setLogs((prev) => [...prev, event.data]);
+                };
 
-                // 3. Poll the backend every 3 seconds for deployment status
                 const interval = setInterval(async () => {
-                  const response = await axios.get(`${BACKEND_UPLOAD_URL}/status?id=${res.data.id}`);
+                  const response = await axios.get(`${BACKEND_UPLOAD_URL}/status?id=${newUploadId}`);
 
                   if (response.data.status === "deployed") {
                     clearInterval(interval);
                     setDeployed(true);
+                    setUploading(false);
+                    ws.close(); 
                   }
                 }, 3000);
               } catch (error) {
@@ -78,6 +90,15 @@ export function Landing() {
         </CardContent>
       </Card>
       
+      {uploadId && !deployed && (
+        <Card className="w-full max-w-md mt-8 bg-black text-green-400 font-mono text-xs h-64 overflow-y-auto p-4 rounded-md shadow-inner">
+          {logs.map((log, index) => (
+            <span key={index} className="whitespace-pre-wrap block leading-relaxed">{log}</span>
+          ))}
+          <div ref={logsEndRef} />
+        </Card>
+      )}
+
       {deployed && (
         <Card className="w-full max-w-md mt-8">
           <CardHeader>
@@ -91,10 +112,46 @@ export function Landing() {
             </div>
             <br />
             <Button className="w-full" variant="outline" asChild>
-              <a href={`http://${uploadId}.10kdevs.com/index.html`} target="_blank" rel="noopener noreferrer">
+              <a href={`http://${uploadId}.dev.100xdevs.com:3001/index.html`} target="_blank" rel="noopener noreferrer">
                 Visit Website
               </a>
             </Button>
+            
+            <hr className="my-6 border-gray-200 dark:border-gray-700" />
+            
+            <div className="space-y-2">
+              <Label htmlFor="custom-domain">Add Custom Domain</Label>
+              <div className="flex space-x-2">
+                <Input 
+                  id="custom-domain" 
+                  placeholder="e.g. app.mywebsite.com" 
+                  value={customDomain}
+                  onChange={(e) => setCustomDomain(e.target.value)}
+                />
+                <Button 
+                  onClick={async () => {
+                    if (!customDomain) return;
+                    try {
+                      setMappingStatus("Mapping...");
+                      await axios.post(`${BACKEND_UPLOAD_URL}/custom-domain`, {
+                        id: uploadId,
+                        customDomain: customDomain
+                      });
+                      setMappingStatus("Mapped Successfully!");
+                    } catch (error) {
+                      setMappingStatus("Failed to map");
+                    }
+                  }}
+                >
+                  Link
+                </Button>
+              </div>
+              {mappingStatus && (
+                <p className={`text-sm ${mappingStatus.includes("Success") ? "text-green-500" : "text-red-500"}`}>
+                  {mappingStatus}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
