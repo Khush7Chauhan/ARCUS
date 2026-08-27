@@ -4,8 +4,6 @@ import dotenv from "dotenv";
 import { createClient } from "redis"; 
 
 dotenv.config({ path: "../.env" });
-
-// 1. Initialize Redis to look up custom domain mappings
 const redis = createClient();
 redis.connect();
 
@@ -22,24 +20,17 @@ app.get(/.*/, async (req, res) => {
     let id = "";
 
     try {
-        // 2. Routing Logic: Determine where to get the project ID from
         if (host.includes(".dev.100xdevs.com") || host.includes("localhost")) {
-            // It's a standard deployment, extract ID from the subdomain
             id = host.split(".")[0] || "";
         } else {
-            // 3. It's a custom domain! Look it up in Redis
             const mappedId = await redis.hGet("domain-mappings", host);
-            
             if (!mappedId) {
                 return res.status(404).send("Domain not configured on this platform.");
             }
             id = mappedId;
         }
-
-        // 4. Ensure root requests serve the index.html file
         const filePath = req.path === "/" ? "/index.html" : req.path;
         
-        // 5. DEBUG LOG: See exactly what path is being sent to S3
         const s3Key = `dist/${id}${filePath}`;
         console.log(`[DEBUG] Attempting to fetch S3 Key: ${s3Key}`);
 
