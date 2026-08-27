@@ -9,16 +9,12 @@ export default function Login() {
     try {
       setError("");
       const result = await signInWithPopup(auth, githubProvider);
-      
-      // Extract the GitHub Access Token
       const credential = GithubAuthProvider.credentialFromResult(result);
       const githubToken = credential?.accessToken;
       const user = result.user;
 
       console.log("Welcome:", user.displayName);
       console.log("Use this token to fetch repos from GitHub API:", githubToken);
-      
-      // Here you will eventually redirect the user to their Dashboard
       
     } catch (err: any) {
       console.error("Login Failed:", err);
