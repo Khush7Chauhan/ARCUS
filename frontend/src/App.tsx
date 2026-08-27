@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "./firebase"; // Make sure this path points to your firebase.ts
-import { Landing } from "./component/landing";
-import Login from "./component/Login"; // Make sure this path points to your new Login component
+import { DeployWorkspace, Landing } from "./component/landing";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -28,13 +27,11 @@ function App() {
     );
   }
 
-  // 2. If no user is found, render the Login screen
-  if (!user) {
-    return <Login />;
-  }
+  // 2. Public users see the hero and authenticate from its primary action.
+  if (!user) return <Landing />;
 
-  // 3. If a user is logged in, show your original Landing deploy screen
-  return <Landing />;
+  // 3. Authenticated users continue to the deployment workspace.
+  return <DeployWorkspace />;
 }
 
 export default App;
