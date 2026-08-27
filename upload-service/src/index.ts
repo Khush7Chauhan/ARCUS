@@ -54,7 +54,6 @@ app.get("/status", async (req, res) => {
 });
 
 app.post("/custom-domain", async (req, res) => {
-    // NEW: Accept optional projectId for persistent auto-updates
     const { id, customDomain, projectId } = req.body;
 
     if (!id || !customDomain) {
@@ -63,8 +62,6 @@ app.post("/custom-domain", async (req, res) => {
 
     try {
         await publisher.hSet("domain-mappings", customDomain, id);
-        
-        // NEW: Store reverse mapping so future deploys auto-update this domain
         if (projectId) {
             await publisher.hSet("project:domain", projectId, customDomain);
             await publisher.hSet("project:latest-id", projectId, id);
