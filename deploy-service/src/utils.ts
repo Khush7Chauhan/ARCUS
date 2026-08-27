@@ -13,8 +13,6 @@ publisher.connect();
 export function buildProject(id: string) {
     return new Promise((resolve, reject) => {
         const outputPath = path.join(__dirname, "output", id);
-        
-        // CRITICAL FIX: Verify the download actually worked before running npm
         if (!fs.existsSync(outputPath)) {
             return reject(new Error(
               `Project directory missing: ${outputPath}. ` +

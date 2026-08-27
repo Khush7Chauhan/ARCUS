@@ -27,8 +27,6 @@ export async function downloadS3Folder(prefix: string) {
     })
     .promise();
 
-  // CRITICAL FIX: Throw immediately if S3 returns nothing.
-  // This prevents the silent "empty directory" bug.
   if (!allFiles.Contents || allFiles.Contents.length === 0) {
     throw new Error(
       `S3 listing returned 0 files for prefix "${prefix}". ` +
@@ -40,12 +38,8 @@ export async function downloadS3Folder(prefix: string) {
 
   const allPromises = allFiles.Contents.map(async ({ Key }) => {
     if (!Key) return;
-
-    // Local path mirrors the S3 key exactly: __dirname/output/id/...
     const finalOutputPath = path.join(__dirname, Key);
     const dirname = path.dirname(finalOutputPath);
-
-    // CRITICAL FIX: Create the directory BEFORE opening the write stream.
     if (!fs.existsSync(dirname)) {
       fs.mkdirSync(dirname, { recursive: true });
     }
@@ -64,7 +58,6 @@ export async function downloadS3Folder(prefix: string) {
         })
         .pipe(outputFile)
         .on("error", (err) => {
-          // CRITICAL FIX: Catch disk-write errors (permissions, disk full, etc.)
           console.error(`[DOWNLOAD ERROR] Disk write failed for ${Key}:`, err.message);
           reject(err);
         })
@@ -76,8 +69,6 @@ export async function downloadS3Folder(prefix: string) {
   });
 
   await Promise.all(allPromises);
-
-  // Verification step: confirm the folder actually has files now
   const localFolder = path.join(__dirname, prefix);
   if (!fs.existsSync(localFolder)) {
     throw new Error(`Download verification failed: ${localFolder} does not exist.`);
@@ -121,7 +112,6 @@ const getAllFiles = (folderPath: string): string[] => {
   return response;
 };
 
-// NOTE: Exported so the upload-service can use it too
 export const uploadFile = async (fileName: string, localFilePath: string) => {
   const fileContent = fs.readFileSync(localFilePath);
   const response = await s3

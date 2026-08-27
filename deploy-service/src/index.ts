@@ -16,21 +16,12 @@ async function main() {
 
             const id = res.element;
             console.log(`\n=== Starting build for ID: ${id} ===`);
-            
-            // 1. Download raw source from S3 (output/{id})
             await downloadS3Folder(`output/${id}`);
-            
-            // 2. Build the project locally
             await buildProject(id);
-            
-            // 3. Upload the /dist folder back to S3 (dist/{id})
             await copyFinalDist(id); 
-            
-            // 4. Mark as deployed
             await publisher.hSet("status", id, "deployed");
             console.log(`=== Build successful for ID: ${id} ===\n`);
 
-            // 5. Auto-update domain mappings (from previous question)
             const projectId = await publisher.hGet("deployment:project", id);
             if (projectId) {
                 const customDomain = await publisher.hGet("project:domain", projectId);
@@ -48,8 +39,6 @@ async function main() {
 
         } catch (error: any) {
             console.error(`[FATAL] Build loop error:`, error.message);
-            // Optional: publish failure status to Redis so the upload-service knows
-            // await publisher.hSet("status", id, "failed");
         }
     }
 }
