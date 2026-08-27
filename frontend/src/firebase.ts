@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GithubAuthProvider } from "firebase/auth";
 
-// Replace these with your actual Firebase project configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,5 +14,4 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 export const githubProvider = new GithubAuthProvider();
-// CRITICAL: This scope grants permission to list the user's GitHub repositories
 githubProvider.addScope("repo");
